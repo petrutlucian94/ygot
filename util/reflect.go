@@ -16,11 +16,14 @@ package util
 
 import (
 	"errors"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openconfig/goyang/pkg/yang"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	log "github.com/golang/glog"
 
@@ -267,6 +270,16 @@ func InsertIntoStruct(parentStruct interface{}, fieldName string, fieldValue int
 		nv := reflect.New(ft.Type).Elem()
 		nv.SetBytes(v.Bytes())
 		v = nv
+	}
+
+	if _, ok := pv.Elem().FieldByName(fieldName).Interface().(*apiextensionsv1.JSON); ok {
+		bytes, err := json.Marshal(v.Interface())
+		if err != nil {
+			return err
+		}
+		jsonObj := &apiextensionsv1.JSON{Raw: bytes}
+		pv.Elem().FieldByName(fieldName).Set(reflect.ValueOf(jsonObj))
+		return nil
 	}
 
 	n := v

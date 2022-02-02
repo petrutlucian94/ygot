@@ -22,6 +22,8 @@ import (
 	"sort"
 	"strings"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	"github.com/openconfig/gnmi/errlist"
 	"github.com/openconfig/gnmi/value"
 	"github.com/openconfig/ygot/util"
@@ -1383,8 +1385,14 @@ func jsonValue(field reflect.Value, parentMod string, args jsonOutputConfig) (in
 		case reflect.Struct:
 			goStruct, ok := field.Interface().(GoStruct)
 			if !ok {
-				return nil, fmt.Errorf("cannot map struct %v, invalid GoStruct", field)
+				json, ok := field.Interface().(*apiextensionsv1.JSON)
+				if ok {
+					jsonBytes, err := json.MarshalJSON()
+					return string(jsonBytes), err
+				}
+				return nil, fmt.Errorf("cannot map struct %v", field)
 			}
+
 
 			var err error
 			value, err = structJSON(goStruct, parentMod, args)
