@@ -341,6 +341,8 @@ import (
 	"fmt"
 	"reflect"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	"{{ .GoOptions.YgotImportPath }}"
 
 {{- if .GenerateSchema }}
@@ -1654,7 +1656,8 @@ func writeGoStruct(targetStruct *Directory, goStructElements map[string]*Directo
 
 		metadataTagBuf.WriteString(` ygotAnnotation:"true"`)
 
-		fieldDef.Tags = tagBuf.String()
+		jsonTag := fmt.Sprintf("json:\"%s,omitempty\"", strings.ToLower(fieldDef.Name))
+		fieldDef.Tags = jsonTag + " " + tagBuf.String()
 
 		// Append the generated field definition to the set of fields of the struct.
 		structDef.Fields = append(structDef.Fields, fieldDef)
@@ -1750,29 +1753,29 @@ func writeGoStruct(targetStruct *Directory, goStructElements map[string]*Directo
 	// interfaceBuf is used to store the code generated for interfaces that
 	// are used for multi-type unions within the struct.
 	var interfaceBuf bytes.Buffer
-	for _, intf := range genUnions {
-		if goOpts.GenerateSimpleUnions {
-			if _, ok := gogen.generatedUnions[intf.Name]; !ok {
-				if err := unionTypeSimpleTemplate.Execute(&interfaceBuf, intf); err != nil {
-					errs = append(errs, err)
-				}
-				gogen.generatedUnions[intf.Name] = true
-			}
-			if err := unionHelperSimpleTemplate.Execute(&interfaceBuf, intf); err != nil {
-				errs = append(errs, err)
-			}
-		} else {
-			if _, ok := gogen.generatedUnions[intf.Name]; !ok {
-				if err := unionTypeTemplate.Execute(&interfaceBuf, intf); err != nil {
-					errs = append(errs, err)
-				}
-				gogen.generatedUnions[intf.Name] = true
-			}
-			if err := unionHelperTemplate.Execute(&interfaceBuf, intf); err != nil {
-				errs = append(errs, err)
-			}
-		}
-	}
+	// for _, intf := range genUnions {
+	// 	if goOpts.GenerateSimpleUnions {
+	// 		if _, ok := gogen.generatedUnions[intf.Name]; !ok {
+	// 			if err := unionTypeSimpleTemplate.Execute(&interfaceBuf, intf); err != nil {
+	// 				errs = append(errs, err)
+	// 			}
+	// 			gogen.generatedUnions[intf.Name] = true
+	// 		}
+	// 		if err := unionHelperSimpleTemplate.Execute(&interfaceBuf, intf); err != nil {
+	// 			errs = append(errs, err)
+	// 		}
+	// 	} else {
+	// 		if _, ok := gogen.generatedUnions[intf.Name]; !ok {
+	// 			if err := unionTypeTemplate.Execute(&interfaceBuf, intf); err != nil {
+	// 				errs = append(errs, err)
+	// 			}
+	// 			gogen.generatedUnions[intf.Name] = true
+	// 		}
+	// 		if err := unionHelperTemplate.Execute(&interfaceBuf, intf); err != nil {
+	// 			errs = append(errs, err)
+	// 		}
+	// 	}
+	// }
 
 	if generateJSONSchema {
 		if err := generateValidator(&methodBuf, structDef); err != nil {
