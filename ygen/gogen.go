@@ -469,6 +469,20 @@ func Unmarshal(data []byte, destStruct ygot.GoStruct, opts ...ytypes.UnmarshalOp
 	return ytypes.Unmarshal(schema, destStruct, jsonTree, opts...)
 }
 
+func (in *Device) DeepCopyInto(out *Device) {
+	b, _ := json.Marshal(in)
+	json.Unmarshal(b, out)
+}
+
+func (in *Device) DeepCopy() *Device {
+	if in == nil {
+		return nil
+	}
+	out := new(Device)
+	in.DeepCopyInto(out)
+	return out
+}
+
 {{- end }}
 
 {{- if .GoOptions.IncludeModelData }}
