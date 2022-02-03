@@ -2036,7 +2036,8 @@ func yangListFieldToGoType(listField *yang.Entry, listFieldName string, parent *
 		return "", nil, nil, fmt.Errorf("list element %s did not have a resolved name", listField.Path())
 	}
 
-	if listElem.ListAttr == nil || len(listElem.ListAttr.Keys) == 0 {
+	// if listElem.ListAttr == nil || len(listElem.ListAttr.Keys) == 0 {
+	if true {
 		// Keyless list therefore represent this as a slice of pointers to
 		// the struct that represents the list element itself.
 		return fmt.Sprintf("[]*%s", listName), nil, nil, nil
