@@ -1026,6 +1026,15 @@ var ΛEnum = map[string]map[int64]ygot.EnumDefinition{
 }
 `)
 
+	// NOTE(lpetrut): quick hack, handle enums as strings.
+	// Original loop:
+	//   {{- range $schemapath, $types := . }}
+	// "{{ $schemapath }}": []reflect.Type{
+	// 	{{- range $i, $t := $types }}
+	// 	reflect.TypeOf(({{ $t }})(0)),
+	// 	{{- end }}
+	// },
+	// {{- end }}
 	// goEnumTypeMapTemplate provides a template to output a constant map which
 	// can be used to resolve a schemapath to the set of enumerated types that
 	// are valid for the leaf or leaf-list defined at the path specified.
@@ -1034,13 +1043,6 @@ var ΛEnum = map[string]map[int64]ygot.EnumDefinition{
 // correspond with the leaf. The type is represented as a reflect.Type. The naming
 // of the map ensures that there are no clashes with valid YANG identifiers.
 var ΛEnumTypes = map[string][]reflect.Type{
-  {{- range $schemapath, $types := . }}
-	"{{ $schemapath }}": []reflect.Type{
-		{{- range $i, $t := $types }}
-		reflect.TypeOf(({{ $t }})(0)),
-		{{- end }}
-	},
-	{{- end }}
 }
 `)
 
@@ -1566,6 +1568,11 @@ func writeGoStruct(targetStruct *Directory, goStructElements map[string]*Directo
 				// Create the subtype documentation string.
 				intf.SubtypeDocumentation = strings.Join(genTypes, ", ")
 				genUnions = append(genUnions, intf)
+			}
+
+			// NOTE(lpetrut): quick hack to treat enums as strings.
+			if mtype.IsEnumeratedValue {
+				fType = "*string"
 			}
 
 			if field.ListAttr != nil {

@@ -421,7 +421,7 @@ func (cg *YANGCodeGenerator) GenerateGoCode(yangFiles, includePaths []string) (*
 		return nil, errs
 	}
 
-	enumSet, goEnums, errs := findEnumSet(mdef.enumEntries, cg.Config.TransformationOptions.CompressBehaviour.CompressEnabled(), false, cg.Config.ParseOptions.SkipEnumDeduplication, cg.Config.TransformationOptions.ShortenEnumLeafNames, cg.Config.TransformationOptions.UseDefiningModuleForTypedefEnumNames, cg.Config.GoOptions.AppendEnumSuffixForSimpleUnionEnums, false, cg.Config.TransformationOptions.EnumOrgPrefixesToTrim)
+	enumSet, _, errs := findEnumSet(mdef.enumEntries, cg.Config.TransformationOptions.CompressBehaviour.CompressEnabled(), false, cg.Config.ParseOptions.SkipEnumDeduplication, cg.Config.TransformationOptions.ShortenEnumLeafNames, cg.Config.TransformationOptions.UseDefiningModuleForTypedefEnumNames, cg.Config.GoOptions.AppendEnumSuffixForSimpleUnionEnums, false, cg.Config.TransformationOptions.EnumOrgPrefixesToTrim)
 	if errs != nil {
 		return nil, errs
 	}
@@ -479,10 +479,12 @@ func (cg *YANGCodeGenerator) GenerateGoCode(yangFiles, includePaths []string) (*
 		}
 	}
 
-	enumSnippets, enumMap, errs := generateEnumCode(goEnums)
-	if errs != nil {
-		codegenErr = util.AppendErrs(codegenErr, errs)
-	}
+	// NOTE(lpetrut): quick hack to treat enums as strings.
+	// enumSnippets, enumMap, errs := generateEnumCode(goEnums)
+	// if errs != nil {
+	// 	codegenErr = util.AppendErrs(codegenErr, errs)
+	// }
+	enumSnippets, enumMap, errs := []string{}, "", util.Errors{}
 
 	var rawSchema []byte
 	var jsonSchema string

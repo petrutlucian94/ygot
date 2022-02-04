@@ -92,6 +92,10 @@ func getLoneUnionType(schema *yang.Entry, unionT reflect.Type, ets []reflect.Typ
 		default:
 			return yang.Ynone, false, fmt.Errorf("got %v non-enum types and %v enum types for union schema %s for type %v, expect just one type in total", sks, ets, schema.Name, unionT)
 		}
+		if isEnum {
+			// NOTE(lpetrut): quick enum hack
+			yk = yang.Ystring
+		}
 		return yk, isEnum, nil
 	}
 	return yang.Ynone, false, nil
@@ -119,6 +123,9 @@ func castToOneEnumValue(ets []reflect.Type, value string) (interface{}, error) {
 // castToEnumValue returns value as the given type ft, if value is one of
 // the allowed values of ft, or nil, nil otherwise.
 func castToEnumValue(ft reflect.Type, value string) (interface{}, error) {
+	// NOTE(lpetrut): quick hack, handling enums as strings
+	return value, nil
+
 	if ft.Kind() == reflect.Slice {
 		// leaf-list case
 		ft = ft.Elem()

@@ -16,10 +16,13 @@ package ytypes
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	log "github.com/golang/glog"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -447,14 +450,23 @@ func unmarshalUnion(schema *yang.Entry, parent interface{}, fieldName string, va
 	if loneType != yang.Ynone {
 		goValue, err := unmarshalScalar(parent, yangKindToLeafEntry(loneType), fieldName, value, enc)
 		if err != nil {
-			return fmt.Errorf("could not unmarshal %v into type %s", value, loneType)
+			return fmt.Errorf("could not unmarshal %v into type %s. enum: %s. Error: %v.", value, loneType, isEnum, err)
 		}
+
+		// NOTE(lpetrut): union/enum hack
+		bytes, err := json.Marshal(goValue)
+		if err != nil {
+			return err
+		}
+		jsonObj := &apiextensionsv1.JSON{Raw: bytes}
+
 
 		if !util.IsTypeSlice(destUnionFieldElemT) {
 			if isEnum {
-				destUnionFieldV.Set(reflect.ValueOf(goValue))
+				destUnionFieldV.Set(reflect.ValueOf(jsonObj))
 			} else {
-				destUnionFieldV.Set(reflect.ValueOf(ygot.ToPtr(goValue)))
+				destUnionFieldV.Set(reflect.ValueOf(jsonObj))
+				// destUnionFieldV.Set(reflect.ValueOf(ygot.ToPtr(goValue)))
 			}
 			return nil
 		}
@@ -467,7 +479,7 @@ func unmarshalUnion(schema *yang.Entry, parent interface{}, fieldName string, va
 			// Ensure that we handle the case where there is an existing slice.
 			sl = destUnionFieldV
 		}
-		destUnionFieldV.Set(reflect.Append(sl, reflect.ValueOf(goValue)))
+		destUnionFieldV.Set(reflect.Append(sl, reflect.ValueOf(jsonObj)))
 		return nil
 	}
 
@@ -678,7 +690,9 @@ func sanitizeJSON(parent interface{}, schema *yang.Entry, fieldName string, valu
 	ykind := schema.Type.Kind
 
 	if ykind != yang.Yunion && reflect.ValueOf(value).Type() != yangToJSONType(ykind) {
-		return nil, fmt.Errorf("got %T type for field %s, expect %v", value, schema.Name, yangToJSONType(ykind).Kind())
+		// NOTE(lpetrut): ugly hack, we expect an enum -> string to hit this.
+		return value.(string), nil
+		// return nil, fmt.Errorf("got %T type for field %s, expect %v %v", value, schema.Name, yangToJSONType(ykind).Kind())
 	}
 
 	switch ykind {
