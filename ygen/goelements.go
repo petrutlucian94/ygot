@@ -456,7 +456,9 @@ func (s *goGenState) goUnionType(args resolveTypeArgs, compressOCPaths, skipEnum
 
 	// TODO(lpetrut): use a flag for this. For now, we're adding a quick hack
 	// to handle unions as *apiextensionsv1.JSON
-	resolvedType.NativeType = "*apiextensionsv1.JSON"
+	if resolvedType.NativeType != "*string" && resolvedType.NativeType != "string" {
+		resolvedType.NativeType = "*apiextensionsv1.JSON"
+	}
 	resolvedType.UnionTypes = unionTypes
 
 	return resolvedType, nil
